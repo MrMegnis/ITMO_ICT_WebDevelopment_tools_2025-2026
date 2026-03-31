@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlmodel
+alembic
+python-dotenv
+python-multipart
+psycopg[binary]
+email-validator
+
