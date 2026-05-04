@@ -16,10 +16,9 @@ if config.config_file_name is not None:
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
-db_url = os.getenv(
-    "DB_ADMIN",
-    "postgresql+psycopg://postgres:postgres@localhost:5432/personal_finance_lab1",
-)
+db_url = os.getenv("DB_ADMIN")
+if not db_url:
+    raise RuntimeError("DB_ADMIN is not set. Configure it in .env before running Alembic.")
 config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = SQLModel.metadata
@@ -54,4 +53,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
