@@ -1,0 +1,2 @@
+-r ../../Lr1/lab_1/requirements.txt
+aiohttp
