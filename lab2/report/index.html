@@ -16,6 +16,8 @@
         <link rel="prev" href="../../lab1/report/">
       
       
+        <link rel="next" href="../../lab3/report/">
+      
       
         
       
@@ -270,6 +272,25 @@
     
   
   Лабораторная 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../lab3/report/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Лабораторная 3
 
       </a>
     </li>
@@ -659,6 +680,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lab3/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Лабораторная 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -976,7 +1024,7 @@
   __init__.py
 </code></pre></div>
 <p>Общая логика вынесена в отдельные модули:
-- <code>sum_common.py</code> содержит разбиение диапазона, формулу суммы арифметической прогрессии, расчет ожидаемого значения и вывод результата;
+- <code>sum_common.py</code> содержит разбиение диапазона, расчет суммы обычным циклом, расчет ожидаемого значения и вывод результата;
 - <code>parser_common.py</code> содержит список URL, загрузку HTML через стандартную библиотеку, извлечение тега <code>&lt;title&gt;</code>, инициализацию БД и сохранение результата в таблицу <code>category</code> проекта из лабораторной работы 1.</p>
 <h2 id="1">Задание 1. Расчет суммы<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p>В первом задании реализованы три программы, которые считают сумму чисел от <code>1</code> до заданного предела. По умолчанию используется значение <code>10_000_000_000_000</code>, но для быстрой проверки можно передать меньший предел через аргумент <code>--limit</code>.</p>
@@ -996,15 +1044,18 @@
 
     <span class="k">return</span> <span class="n">ranges</span>
 </code></pre></div>
-<p>Сумма внутри каждого диапазона считается по формуле арифметической прогрессии:</p>
+<p>Сумма внутри каждого диапазона считается обычным циклом:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">calculate_sum</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">end</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">number</span>
+    <span class="k">return</span> <span class="n">total</span>
 </code></pre></div>
-<p>Такой подход выбран потому, что прямой перебор до <code>10_000_000_000_000</code> занял бы слишком много времени и не был бы практичным для демонстрации работы потоков, процессов и задач <code>asyncio</code>.</p>
+<p>Такой подход делает задачу CPU-bound и позволяет сравнить потоки, процессы и <code>asyncio</code> на реальном вычислении. Полный предел <code>10_000_000_000_000</code> слишком велик для живой демонстрации, поэтому для проверки используется уменьшенный <code>--limit</code>.</p>
 <h3 id="threading">Реализация через <code>threading</code><a class="headerlink" href="#threading" title="Permanent link">&para;</a></h3>
 <p>Файл: <code>task1_threading_sum.py</code></p>
 <p>Для каждой части диапазона создается отдельный поток <code>threading.Thread</code>. Результаты сохраняются в общий список, после чего основной поток ожидает завершения всех потоков через <code>join()</code>.</p>
-<p>Особенность подхода: потоки удобны для задач ожидания ввода-вывода, но для CPU-bound вычислений в Python ограничены GIL. В данной реализации расчет быстрый, потому что используется формула.</p>
+<p>Особенность подхода: потоки удобны для задач ожидания ввода-вывода, но для CPU-bound вычислений в Python ограничены GIL.</p>
 <h3 id="multiprocessing">Реализация через <code>multiprocessing</code><a class="headerlink" href="#multiprocessing" title="Permanent link">&para;</a></h3>
 <p>Файл: <code>task1_multiprocessing_sum.py</code></p>
 <p>Диапазоны передаются в пул процессов <code>multiprocessing.Pool</code>, а результаты собираются через <code>pool.map()</code>.</p>
@@ -1064,8 +1115,9 @@
 <p>Подход рабочий, но для сетевого парсинга обычно избыточен: процессы потребляют больше ресурсов, чем потоки или асинхронные задачи.</p>
 <h3 id="asyncio-aiohttp">Реализация через <code>asyncio</code> и <code>aiohttp</code><a class="headerlink" href="#asyncio-aiohttp" title="Permanent link">&para;</a></h3>
 <p>Файл: <code>task2_async_parser.py</code></p>
-<p>Асинхронная версия использует <code>aiohttp</code> для HTTP-запросов и <code>asyncio.gather()</code> для одновременного запуска задач. Запись в БД выполняется через <code>asyncio.to_thread()</code>, потому что операции SQLModel/SQLAlchemy синхронные.</p>
+<p>Асинхронная версия использует <code>aiohttp</code> для HTTP-запросов и <code>asyncio.gather()</code> для одновременного запуска задач. Запись в БД тоже выполняется асинхронно: для этого используется SQLAlchemy <code>AsyncSession</code>, <code>create_async_engine()</code> и функция <code>save_title_async()</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">urls</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ParsedPage</span><span class="p">]:</span>
+    <span class="k">await</span> <span class="n">initialize_database_async</span><span class="p">()</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">parse_and_save</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">)))</span>
 </code></pre></div>
 <p>Этот вариант наиболее естественен для большого количества сетевых запросов: пока один запрос ожидает ответа, event loop переключается на другие задачи.</p>
@@ -1086,9 +1138,9 @@ python<span class="w"> </span>task1_multiprocessing_sum.py
 python<span class="w"> </span>task1_async_sum.py
 </code></pre></div>
 <p>Быстрый демонстрационный запуск:</p>
-<div class="highlight"><pre><span></span><code>python<span class="w"> </span>task1_threading_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">1000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
-python<span class="w"> </span>task1_multiprocessing_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">1000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
-python<span class="w"> </span>task1_async_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">1000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>task1_threading_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">10000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+python<span class="w"> </span>task1_multiprocessing_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">10000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+python<span class="w"> </span>task1_async_sum.py<span class="w"> </span>--limit<span class="w"> </span><span class="m">10000000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <p>Запуск программ для задания 2:</p>
 <div class="highlight"><pre><span></span><code>python<span class="w"> </span>task2_threading_parser.py
@@ -1111,10 +1163,10 @@ python<span class="w"> </span>task2_async_parser.py
 </thead>
 <tbody>
 <tr>
-<td>Сумма, <code>--limit 1000000 --workers 4</code></td>
-<td style="text-align: right;">0.001848 s</td>
-<td style="text-align: right;">0.234405 s</td>
-<td style="text-align: right;">0.002962 s</td>
+<td>Сумма, <code>--limit 10000000 --workers 4</code></td>
+<td style="text-align: right;">0.251209 s</td>
+<td style="text-align: right;">0.193703 s</td>
+<td style="text-align: right;">0.251658 s</td>
 </tr>
 <tr>
 <td>Парсер, URL по умолчанию</td>
@@ -1125,8 +1177,8 @@ python<span class="w"> </span>task2_async_parser.py
 </tbody>
 </table>
 <p>По результатам видно:
-- для задачи суммы все варианты работают быстро, потому что вместо прямого цикла используется формула;
-- <code>multiprocessing</code> оказался медленнее на малом демонстрационном запуске из-за накладных расходов на создание процессов;
+- для задачи суммы используется прямой цикл, поэтому время зависит от размера диапазона;
+- <code>multiprocessing</code> быстрее на вычислительной задаче, потому что распределяет работу между процессами и может использовать несколько ядер CPU;
 - для парсинга <code>threading</code> и <code>asyncio</code> показывают близкие результаты, так как задача является I/O-bound;
 - <code>asyncio</code> немного быстрее в приведенном запуске и лучше масштабируется при большом количестве сетевых запросов;
 - <code>multiprocessing</code> для парсинга работает корректно, но расходует больше ресурсов и обычно не нужен для такой задачи.</p>
@@ -1144,7 +1196,7 @@ python<span class="w"> </span>task2_async_parser.py
 <li>Сравнение подходов по времени выполнения: выполнено.</li>
 </ul>
 <h2 id="_10">Вывод<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h2>
-<p>В ходе лабораторной работы были реализованы и сравнены три модели конкурентного выполнения в Python: потоки, процессы и асинхронные задачи. Для вычислительной задачи наиболее подходящим подходом в общем случае является <code>multiprocessing</code>, так как он позволяет использовать несколько ядер процессора, однако на демонстрационном расчете накладные расходы процессов оказались выше полезной работы. Для сетевого парсинга лучше подходят <code>threading</code> и <code>asyncio</code>, поскольку основное время тратится на ожидание HTTP-ответов. Асинхронная реализация с <code>aiohttp</code> показала лучший результат среди вариантов парсера и является наиболее удобной для масштабирования на большое количество URL.</p>
+<p>В ходе лабораторной работы были реализованы и сравнены три модели конкурентного выполнения в Python: потоки, процессы и асинхронные задачи. Для вычислительной задачи наиболее подходящим подходом является <code>multiprocessing</code>, так как он позволяет использовать несколько ядер процессора. <code>threading</code> и <code>asyncio</code> не ускоряют CPU-bound вычисления из-за GIL и отсутствия операций ожидания. Для сетевого парсинга лучше подходят <code>threading</code> и <code>asyncio</code>, поскольку основное время тратится на ожидание HTTP-ответов. Асинхронная реализация с <code>aiohttp</code> и <code>AsyncSession</code> удобна для масштабирования на большое количество URL.</p>
 
 
 
