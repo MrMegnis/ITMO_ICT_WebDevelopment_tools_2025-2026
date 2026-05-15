@@ -7,7 +7,7 @@ The work contains six Python programs:
 - `task1_async_sum.py` - solves the same task with `asyncio` tasks.
 - `task2_threading_parser.py` - parses page titles in threads and saves them to the Lab 1 database.
 - `task2_multiprocessing_parser.py` - parses page titles in processes and saves them to the Lab 1 database.
-- `task2_async_parser.py` - parses page titles with `asyncio` and `aiohttp`, then saves them to the Lab 1 database.
+- `task2_async_parser.py` - parses page titles with `asyncio` and `aiohttp`, then saves them to the Lab 1 database through an async SQLAlchemy session.
 
 The Lab 1 project is a personal finance API, so the parser works with financial web pages:
 central bank indicators, exchange rates, stock market and investing pages. Parsed page titles are
@@ -48,13 +48,15 @@ python task1_async_sum.py
 Fast demo value:
 
 ```bash
-python task1_threading_sum.py --limit 1000000 --workers 4
-python task1_multiprocessing_sum.py --limit 1000000 --workers 4
-python task1_async_sum.py --limit 1000000 --workers 4
+python task1_threading_sum.py --limit 10000000 --workers 4
+python task1_multiprocessing_sum.py --limit 10000000 --workers 4
+python task1_async_sum.py --limit 10000000 --workers 4
 ```
 
-Each program has a `calculate_sum()` function. The calculation uses the arithmetic progression
-formula for every range, because iterating to `10_000_000_000_000` directly is not practical.
+Each program has a `calculate_sum()` function. The calculation is intentionally done with a
+regular loop, so the task remains CPU-bound and the difference between threading,
+multiprocessing and asyncio is visible. For a quick demonstration use a smaller `--limit`;
+the full `10_000_000_000_000` value is too large for a live run.
 
 ## Task 2: parser programs
 
@@ -77,12 +79,16 @@ Each parser program has a `parse_and_save(url)` function. It downloads HTML, ext
 row is connected with the personal finance domain: the page title becomes a financial source in
 the existing `category` table, and the original URL is saved in `description`.
 
+The async parser uses asynchronous HTTP requests and asynchronous database writes:
+`aiohttp` downloads pages, and `save_title_async()` writes rows through SQLAlchemy
+`AsyncSession`.
+
 ## Comparison
 
 Sample command for Task 1:
 
 ```bash
-python task1_threading_sum.py --limit 1000000 --workers 4
+python task1_threading_sum.py --limit 10000000 --workers 4
 ```
 
 | Program | Best use case | Expected result |
@@ -91,9 +97,8 @@ python task1_threading_sum.py --limit 1000000 --workers 4
 | multiprocessing | CPU-bound calculations | Uses several CPU cores, but process startup and data transfer add overhead |
 | asyncio | Many waiting operations, such as HTTP requests | Very efficient for I/O-bound work, but CPU-bound work does not become faster by itself |
 
-For Task 1 all three variants are fast because every worker uses a formula. With a real loop,
-`multiprocessing` would usually be faster for CPU-bound work, while `threading` and `asyncio`
-would not bypass the GIL.
+For Task 1 the range is summed with a loop. `multiprocessing` can use several CPU cores,
+while `threading` and `asyncio` do not bypass the GIL for CPU-bound Python code.
 
 For Task 2, `threading` and `asyncio` are both good choices because most time is spent waiting for
 network responses. `multiprocessing` also works, but it spends more resources on processes and is
@@ -105,5 +110,5 @@ Fill the table with times from your machine after running the scripts.
 
 | Task | threading | multiprocessing | asyncio |
 | --- | ---: | ---: | ---: |
-| Sum, `--limit 1000000 --workers 4` | 0.001848 s | 0.234405 s | 0.002962 s |
+| Sum, `--limit 10000000 --workers 4` | 0.251209 s | 0.193703 s | 0.251658 s |
 | Parser, default URLs | 0.994758 s | 1.537587 s | 0.953795 s |

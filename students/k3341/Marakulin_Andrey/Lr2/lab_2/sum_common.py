@@ -26,7 +26,10 @@ def split_ranges(limit: int, workers: int) -> list[tuple[int, int]]:
 
 
 def calculate_sum(start: int, end: int) -> int:
-    return (start + end) * (end - start + 1) // 2
+    total = 0
+    for number in range(start, end + 1):
+        total += number
+    return total
 
 
 def expected_sum(limit: int) -> int:

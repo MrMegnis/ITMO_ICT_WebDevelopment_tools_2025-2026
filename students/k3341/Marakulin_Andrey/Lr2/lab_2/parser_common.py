@@ -12,6 +12,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 STUDENT_DIR = Path(__file__).resolve().parents[2]
 LAB1_DIR = STUDENT_DIR / "Lr1" / "lab_1"
@@ -21,6 +22,7 @@ if str(LAB1_DIR) not in sys.path:
 from sqlalchemy.exc import IntegrityError  # noqa: E402
 from sqlmodel import SQLModel, Session, select  # noqa: E402
 
+from app.core.config import settings  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.db import engine  # noqa: E402
 from app.models import Category, User  # noqa: E402
@@ -33,6 +35,10 @@ DEFAULT_URLS = [
     "https://finance.yahoo.com/markets/",
     "https://www.investing.com/",
 ]
+
+
+async_engine = create_async_engine(settings.database_url, echo=False)
+AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False)
 
 
 @dataclass(frozen=True)
@@ -128,6 +134,11 @@ def initialize_database() -> None:
     SQLModel.metadata.create_all(engine)
 
 
+async def initialize_database_async() -> None:
+    async with async_engine.begin() as connection:
+        await connection.run_sync(SQLModel.metadata.create_all)
+
+
 def save_title(url: str, title: str, method: str) -> int | None:
     with Session(engine) as session:
         user = ensure_parser_user(session)
@@ -139,6 +150,46 @@ def save_title(url: str, title: str, method: str) -> int | None:
         session.add(category)
         session.commit()
         session.refresh(category)
+        return category.id
+
+
+async def ensure_parser_user_async(session: AsyncSession) -> User:
+    email = "lab2-parser@example.com"
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalars().first()
+    if user:
+        return user
+
+    user = User(
+        email=email,
+        username="lab2_parser",
+        hashed_password=hash_password("lab2_parser_password"),
+    )
+    session.add(user)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        result = await session.execute(select(User).where(User.email == email))
+        existing_user = result.scalars().first()
+        if existing_user:
+            return existing_user
+        raise
+    await session.refresh(user)
+    return user
+
+
+async def save_title_async(url: str, title: str, method: str) -> int | None:
+    async with AsyncSessionLocal() as session:
+        user = await ensure_parser_user_async(session)
+        category = Category(
+            title=f"{method} financial source: {title}"[:100],
+            description=f"Financial source parsed from {url}"[:255],
+            user_id=user.id,
+        )
+        session.add(category)
+        await session.commit()
+        await session.refresh(category)
         return category.id
 
 

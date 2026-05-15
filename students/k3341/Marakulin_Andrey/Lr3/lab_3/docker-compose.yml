@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: marakulin_lab3_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-personal_finance_lab3}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_lab3_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-personal_finance_lab3}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: marakulin_lab3_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  api:
+    build: .
+    container_name: marakulin_lab3_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_ADMIN: postgresql+psycopg://postgres:postgres@postgres:5432/personal_finance_lab3
+      PARSER_SERVICE_URL: http://parser:8001
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  parser:
+    build: .
+    container_name: marakulin_lab3_parser
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_ADMIN: postgresql+psycopg://postgres:postgres@postgres:5432/personal_finance_lab3
+    command: uvicorn parser_service.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build: .
+    container_name: marakulin_lab3_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_ADMIN: postgresql+psycopg://postgres:postgres@postgres:5432/personal_finance_lab3
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: celery -A app.celery_app.celery_app worker --loglevel=info --pool=solo
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_lab3_data:
